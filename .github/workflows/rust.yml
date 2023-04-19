@@ -12,10 +12,13 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Copy to C drive
+      run: cp D:\a C:\ -Recurse
     - name: Install cargo-hack
       uses: baptiste0928/cargo-install@v2
       with:
         crate: cargo-bisect-rustc
     - name: Run tests
-      run: cargo-bisect-rustc --start=1.45.0 --end=2020-07-01 -- test --verbose --features "egl build_dlls"
+      working-directory: "C:\\a\\${{ github.event.repository.name }}\\${{ github.event.repository.name }}"
+      run: cargo-bisect-rustc --start=1.45.0 --end=2020-06-17 -- test --verbose --features "egl build_dlls"
 
