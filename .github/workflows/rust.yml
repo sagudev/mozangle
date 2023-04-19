@@ -14,6 +14,5 @@ jobs:
     - uses: actions/checkout@v3
     - run: cargo install cargo-bisect-rustc
     - name: Run tests
-      if: contains(matrix.os, 'windows')
       run: cargo-bisect-rustc --start=1.45.0 --end=1.469.0 -- test --verbose --features "egl build_dlls"
 
