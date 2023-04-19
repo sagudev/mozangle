@@ -12,7 +12,10 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
-    - run: cargo install cargo-bisect-rustc
+    - name: Install cargo-hack
+      uses: baptiste0928/cargo-install@v2
+      with:
+        crate: cargo-bisect-rustc
     - name: Run tests
-      run: cargo-bisect-rustc --start=1.45.0 --end=1.46.0 -- test --verbose --features "egl build_dlls"
+      run: cargo-bisect-rustc --start=1.45.0 --end=2020-06-01 -- test --verbose --features "egl build_dlls"
 
