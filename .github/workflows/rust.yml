@@ -9,23 +9,11 @@ env:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ["windows-latest", "ubuntu-latest", "macos-latest"]
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: dtolnay/rust-toolchain@1.45.0
-      if: contains(matrix.os, 'windows')
+    - run: cargo install cargo-bisect-rustc
     - name: Run tests
       if: contains(matrix.os, 'windows')
-      run: cargo test --verbose --features "egl build_dlls"
-    - uses: dtolnay/rust-toolchain@stable
-      if: ${{ !contains(matrix.os, 'windows') }}
-    - name: Run test (POSIX)
-      if: ${{ !contains(matrix.os, 'windows') }}
-      run: |
-        cargo test --verbose
-        cargo test --verbose --features egl
+      run: cargo-bisect-rustc --start=1.45.0 --end=1.469.0 -- test --verbose --features "egl build_dlls"
 
