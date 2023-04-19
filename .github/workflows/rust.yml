@@ -6,6 +6,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  # See https://github.com/rust-lang/cargo/issues/10303
+  CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
 
 jobs:
   build:
