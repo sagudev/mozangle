@@ -2,10 +2,10 @@
 // Do not edit directly. Instead, edit and run generate_build_data.py again.
 
 pub struct Data {
-     pub sources: &'static [&'static str],
-     pub includes: &'static [&'static str],
-     pub defines: &'static [(&'static str, Option<&'static str>)],
-     pub os_libs: &'static [&'static str],
+    pub sources: &'static [&'static str],
+    pub includes: &'static [&'static str],
+    pub defines: &'static [(&'static str, Option<&'static str>)],
+    pub os_libs: &'static [&'static str],
 }
 
 pub const TRANSLATOR: Data = Data {
