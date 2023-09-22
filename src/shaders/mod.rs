@@ -142,7 +142,7 @@ pub type BuiltInResources = ShBuiltInResources;
 impl default::Default for BuiltInResources {
     fn default() -> BuiltInResources {
         unsafe {
-            let mut ret: BuiltInResources = mem::zeroed();
+            let mut ret: BuiltInResources = BuiltInResources::empty();
             GLSLangInitBuiltInResources(&mut ret);
             ret
         }
