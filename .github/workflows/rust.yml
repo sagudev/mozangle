@@ -31,6 +31,9 @@ jobs:
         run: cargo test --verbose --features "egl build_dlls"
       - name: Run test (POSIX)
         if: ${{ !contains(matrix.os, 'windows') }}
+        env:
+          CC: clang
+          CXX: clang++
         run: |
           cargo test --verbose
 
