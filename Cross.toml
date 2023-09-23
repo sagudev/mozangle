@@ -12,3 +12,8 @@ pre-build = [
     "apt update",
     "apt install -y build-essential pkg-config m4 python3 python3-distutils llvm llvm-dev lld libclang-dev clang libx11-dev",
 ]
+env.passthrough = [
+    "LLVM_CONFIG_PATH=/usr/local/bin/llvm-config-14.0",
+    "LIBCLANG_PATH=/usr/lib/llvm-14/lib",
+    "CLANG_PATH=/usr/bin/clang",
+]

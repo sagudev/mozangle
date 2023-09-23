@@ -239,19 +239,10 @@ fn build_angle(target: &String, egl: bool) {
         .allowlist_var("SH.*")
         .rustified_enum("Sh.*")
         .formatter(Formatter::Rustfmt)
-        .clang_args(["-I", "gfx/angle/checkout/include"])
         .clang_args(clang_args);
 
-    if target.contains("x86_64") {
-        builder = builder.clang_arg("-m64")
-    }
-
-    if target.contains("i686") {
-        builder = builder.clang_arg("-m32")
-    }
-
     if target.contains("x86_64") || target.contains("i686") {
-        builder = builder.clang_arg("-msse2").clang_arg("-march=native")
+        builder = builder.clang_arg("-msse2")
     }
 
     for func in ALLOWLIST_FN {
