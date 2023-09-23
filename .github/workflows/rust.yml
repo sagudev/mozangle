@@ -22,10 +22,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - if: contains(matrix.os, 'ubuntu')
-        run: |
-          sudo apt update
-          sudo apt install -y build-essential pkg-config m4 python3 python3-distutils llvm llvm-dev lld libclang-dev clang libx11-dev
+      #- if: contains(matrix.os, 'ubuntu')
+      #  run: |
+      #    sudo apt update
+      #    sudo apt install -y build-essential pkg-config m4 python3 python3-distutils llvm llvm-dev lld libclang-dev clang libx11-dev
       - name: Run tests
         if: contains(matrix.os, 'windows')
         run: cargo test --verbose --features "egl build_dlls"
