@@ -35,8 +35,8 @@ jobs:
           CC: clang
           CXX: clang++
           #LLVM_CONFIG_PATH: /usr/local/bin/llvm-config-14.0
-          #LIBCLANG_PATH: /usr/lib/llvm-14/lib
-          CLANG_PATH: /usr/bin/clang
+          LIBCLANG_PATH: /usr/lib/llvm-14/lib
+          #CLANG_PATH: /usr/bin/clang
         run: |
           cargo test --verbose
 
