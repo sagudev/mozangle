@@ -35,6 +35,7 @@ jobs:
           CC: clang
           CXX: clang++
         run: |
+          where clang
           RUST_LOG=bindgen=debug cargo test --verbose
 
   build_result:
