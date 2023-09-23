@@ -256,6 +256,7 @@ fn build_angle(target: &String, egl: bool) {
         .write_to_file(out_dir.join("angle_bindings.rs"))
         .expect("Should write bindings to file");
 
+    panic!("{:#?}", builder);
 
     for lib in data.os_libs {
         println!("cargo:rustc-link-lib={}", lib);
