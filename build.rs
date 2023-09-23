@@ -242,6 +242,14 @@ fn build_angle(target: &String, egl: bool) {
         .clang_args(["-I", "gfx/angle/checkout/include"])
         .clang_args(clang_args);
 
+    if target.contains("x86_64") {
+        builder = builder.clang_arg("-m64")
+    }
+
+    if target.contains("i686") {
+        builder = builder.clang_arg("-m32")
+    }
+
     if target.contains("x86_64") || target.contains("i686") {
         builder = builder.clang_arg("-msse2")
     }
