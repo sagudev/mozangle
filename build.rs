@@ -229,6 +229,9 @@ fn build_angle(target: &String, egl: bool) {
     // now generate bindings
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let mut builder = bindgen::builder()
+        // ensure cxx
+        .clang_arg("-x")
+        .clang_arg("c++")
         .rust_target(bindgen::RustTarget::Stable_1_59)
         .header("./src/shaders/glslang-c.cpp")
         .opaque_type("std.*")
@@ -237,10 +240,7 @@ fn build_angle(target: &String, egl: bool) {
         .rustified_enum("Sh.*")
         .formatter(Formatter::Rustfmt)
         .clang_args(["-I", "gfx/angle/checkout/include"])
-        .clang_args(clang_args)
-        // ensure cxx
-        .clang_arg("-x")
-        .clang_arg("c++");
+        .clang_args(clang_args);
 
     if target.contains("x86_64") || target.contains("i686") {
         builder = builder.clang_arg("-msse2")
@@ -251,7 +251,6 @@ fn build_angle(target: &String, egl: bool) {
     }
 
     eprintln!("{:#?}", builder.clone().command_line_flags());
-    panic!("{:#?}", builder.clone());
 
     builder
         .generate()
