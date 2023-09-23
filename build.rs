@@ -251,7 +251,7 @@ fn build_angle(target: &String, egl: bool) {
     }
 
     if target.contains("x86_64") || target.contains("i686") {
-        builder = builder.clang_arg("-msse2")
+        builder = builder.clang_arg("-msse2").clang_arg("-march=native")
     }
 
     for func in ALLOWLIST_FN {
