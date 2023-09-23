@@ -35,7 +35,7 @@ jobs:
           CC: clang
           CXX: clang++
         run: |
-          cargo test --verbose
+          RUST_LOG=bindgen=debug cargo test --verbose
 
   build_result:
     name: homu build finished
