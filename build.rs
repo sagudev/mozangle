@@ -258,6 +258,8 @@ fn build_angle(target: &String, egl: bool) {
         builder = builder.allowlist_function(func)
     }
 
+    builder = builder.emit_diagnostics();
+
     eprintln!("{:#?}", builder.clone().command_line_flags());
 
     builder

@@ -35,7 +35,6 @@ jobs:
           CC: clang
           CXX: clang++
         run: |
-          clang -x c++ -I gfx/angle/checkout/include -std=c++14 -DANGLE_ENABLE_DEBUG_ANNOTATIONS -DANGLE_ENABLE_ESSL -DANGLE_ENABLE_GLSL -DANGLE_ENABLE_HLSL -DANGLE_ENABLE_KEYEDMUTEX -DANGLE_SKIP_DXGI_1_2_CHECK -DDYNAMIC_ANNOTATIONS_ENABLED=1 -DNOMINMAX -DNTDDI_VERSION=0x0A000003 -DUNICODE -DWINVER=0x0A00 -D_ATL_NO_OPENGL -D_CRT_RAND_S -D_CRT_SECURE_NO_DEPRECATE -D_HAS_EXCEPTIONS=0 -D_SCL_SECURE_NO_DEPRECATE -D_SECURE_ATL -D_UNICODE -D__NDK_FPABI__= -I gfx/angle/checkout/include/ -I gfx/angle/checkout/out/gen/angle/ -I gfx/angle/checkout/src/ -I gfx/angle/checkout/src/common/third_party/base/ -m64 -msse2 ./src/shaders/glslang-c.cpp
           cargo test --verbose
 
   build_result:
