@@ -67,7 +67,14 @@ fn build_windows_dll(data: &build_data::Data, dll_name: &str, def_file: &str) {
     // add zlib from libz-sys to include path
     let zlib_link_arg = if let Ok(zlib_include_dir) = env::var("DEP_Z_INCLUDE") {
         build.include(zlib_include_dir.replace("\\", "/"));
-        PathBuf::from(zlib_include_dir).parent().unwrap().join("lib").join("z.lib").as_path().display().to_string()
+        PathBuf::from(zlib_include_dir)
+            .parent()
+            .unwrap()
+            .join("lib")
+            .join("z.lib")
+            .as_path()
+            .display()
+            .to_string()
     } else {
         String::from("z.lib")
     };
@@ -164,7 +171,7 @@ fn build_egl(target: &str) {
 fn build_angle(target: &String, egl: bool) {
     println!("build_angle");
     let data = if egl {
-        build_data::EGL
+        build_data::GLESv2
     } else {
         build_data::TRANSLATOR
     };
@@ -223,7 +230,7 @@ fn build_angle(target: &String, egl: bool) {
             "windows",
             &[
                 "gfx/angle/checkout/src/common/system_utils_win.cpp",
-                "gfx/angle/checkout/src/common/system_utils_win32.cpp"
+                "gfx/angle/checkout/src/common/system_utils_win32.cpp",
             ][..],
         ),
     ] {
