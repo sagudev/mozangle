@@ -28,36 +28,33 @@ fn main() {
         panic!("Do not know how to build DLLs for a non-Windows platform.");
     }
 
-    build_angle(&target, egl);
+    build_translator(&target);
 
     #[cfg(feature = "egl")]
     {
-        build_egl(&target);
-    }
-
-    #[cfg(feature = "egl")]
-    {
-        generate_bindings();
+        build_win_statik(&target, &build_data::GLESv2, "GLESv2");
+        build_win_statik(&target, &build_data::EGL, "EGL");
+        generate_gl_bindings();
     }
 
     #[cfg(feature = "build_dlls")]
     {
         build_windows_dll(
             &build_data::EGL,
-            "libEGL",
+            "EGL",
             "gfx/angle/checkout/src/libEGL/libEGL_autogen.def",
         );
         build_windows_dll(
             &build_data::GLESv2,
-            "libGLESv2",
+            "GLESv2",
             "gfx/angle/checkout/src/libGLESv2/libGLESv2_autogen.def",
         );
     }
 }
 
 #[cfg(feature = "build_dlls")]
-fn build_windows_dll(data: &build_data::Data, dll_name: &str, def_file: &str) {
-    println!("build_windows_dll: {dll_name}");
+fn build_windows_dll(data: &build_data::Data, name: &str, def_file: &str) {
+    println!("build_windows_dll: {name}");
     let mut build = cc::Build::new();
     build.cpp(true);
     build.std("c++17");
@@ -92,9 +89,6 @@ fn build_windows_dll(data: &build_data::Data, dll_name: &str, def_file: &str) {
     let out_string = env::var("OUT_DIR").unwrap();
     let out_path = Path::new(&out_string);
 
-    // Always include the base angle code.
-    cmd.arg(out_path.join("angle.lib"));
-
     for lib in data.os_libs {
         cmd.arg(&format!("{}.lib", lib));
     }
@@ -104,32 +98,22 @@ fn build_windows_dll(data: &build_data::Data, dll_name: &str, def_file: &str) {
     for file in data.sources {
         cmd.arg(fixup_path(file));
     }
-
-    // Enable multiprocessing for faster builds.
-    cmd.arg("/MP");
-    // Specify the creation of a DLL.
-    cmd.arg("/LD"); // Create a DLL.
-                    // Specify the name of the DLL.
-    cmd.arg(format!("/Fe{}", out_path.join(dll_name).display()));
-    // Temporary obj files should go into the output directory. The slash
-    // at the end is required for multiple source inputs.
-    cmd.arg(format!("/Fo{}\\", out_path.display()));
-
     // Specify the def file for the linker.
     cmd.arg("/link");
+    cmd.arg("/dll");
     cmd.arg(format!("/DEF:{def_file}"));
+    cmd.arg(format!("{name}.lib"));
 
     let status = cmd.status();
     assert!(status.unwrap().success());
 }
 
 #[cfg(feature = "egl")]
-fn build_egl(target: &str) {
-    println!("build_egl");
+fn build_win_statik(target: &str, data: &build_data::Data, name: &str) {
+    println!("build_win_statik: {name}");
     let mut build = cc::Build::new();
     build.cpp(true);
     build.std("c++17");
-    let data = build_data::EGL;
     for &(k, v) in data.defines {
         build.define(k, v);
     }
@@ -165,16 +149,12 @@ fn build_egl(target: &str) {
     build.link_lib_modifier("-whole-archive");
 
     // Build lib.
-    build.compile("EGL");
+    build.compile(name);
 }
 
-fn build_angle(target: &String, egl: bool) {
-    println!("build_angle");
-    let data = if egl {
-        build_data::GLESv2
-    } else {
-        build_data::TRANSLATOR
-    };
+fn build_translator(target: &String) {
+    println!("build_translator");
+    let data = build_data::TRANSLATOR;
 
     let repo = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
     env::set_current_dir(repo).unwrap();
@@ -193,14 +173,6 @@ fn build_angle(target: &String, egl: bool) {
     for file in data.includes {
         clang_args.push(String::from("-I"));
         clang_args.push(fixup_path(file));
-    }
-
-    if egl {
-        // add zlib from libz-sys to include path
-        if let Ok(zlib_include_dir) = env::var("DEP_Z_INCLUDE") {
-            clang_args.push(String::from("-I"));
-            clang_args.push(zlib_include_dir.replace("\\", "/"));
-        }
     }
 
     // Change to one of the directory that contains moz.build
@@ -263,7 +235,7 @@ fn build_angle(target: &String, egl: bool) {
 
     build.link_lib_modifier("-whole-archive");
 
-    build.compile("angle");
+    build.compile("translator");
 
     // now generate bindings
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
@@ -332,8 +304,8 @@ fn fixup_path(path: &str) -> String {
 }
 
 #[cfg(feature = "egl")]
-fn generate_bindings() {
-    println!("generate_bindings");
+fn generate_gl_bindings() {
+    println!("generate_gl_bindings");
     use gl_generator::{Api, Fallbacks, Profile, Registry};
     use std::fs::File;
 
