@@ -337,11 +337,6 @@ fn generate_bindings() {
     use gl_generator::{Api, Fallbacks, Profile, Registry};
     use std::fs::File;
 
-    let target = env::var("TARGET").unwrap();
-    if !target.contains("windows") {
-        return;
-    }
-
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
 
     let mut file = File::create(&out_dir.join("egl_bindings.rs")).unwrap();
