@@ -96,6 +96,7 @@ fn build_windows_dll(data: &build_data::Data, name: &str, def_file: &str) {
 
     let status = cmd.status();
     assert!(status.unwrap().success());
+    // link /dll /machine:x86 /DEF:gfx/angle/checkout/src/libEGL/libEGL_autogen.def target\debug\build\mozangle-bc59b197c4abdb9d\out\EGL.lib /OUT:libEGL.dll
 }
 
 #[cfg(feature = "egl")]
