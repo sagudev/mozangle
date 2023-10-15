@@ -52,57 +52,47 @@ fn main() {
     }
 }
 
+fn linker() -> String {
+    fn exec_exists(s: &str) -> bool {
+        match std::process::Command::new(s).spawn() {
+            Ok(_) => true,
+            Err(e) => {
+                if let std::io::ErrorKind::NotFound = e.kind() {
+                    return false;
+                } else {
+                    true
+                }
+            },
+        }
+    }
+    if let Ok(linker) = env::var("LINKER") {
+        linker
+    } else if let Ok(linker) = env::var("RUSTC_LINKER") {
+        linker
+    } else if let Some(linker) = cc::windows_registry::find(&env::var("TARGET").unwrap(), "link.exe") {
+        linker.get_program().to_str().unwrap().to_owned()
+    } else if exec_exists("link"){
+        "link".to_string()
+    } else if exec_exists("lld-link"){
+        "link".to_string()
+    } else {
+        panic!("Linker not found!");
+    }
+}
+
 #[cfg(feature = "build_dlls")]
 fn build_windows_dll(data: &build_data::Data, name: &str, def_file: &str) {
     println!("build_windows_dll: {name}");
-    let mut build = cc::Build::new();
-    build.cpp(true);
-    build.std("c++17");
-    for &(k, v) in data.defines {
-        build.define(k, v);
-    }
-    // add zlib from libz-sys to include path
-    let zlib_link_arg = if let Ok(zlib_include_dir) = env::var("DEP_Z_INCLUDE") {
-        build.include(zlib_include_dir.replace("\\", "/"));
-        PathBuf::from(zlib_include_dir)
-            .parent()
-            .unwrap()
-            .join("lib")
-            .join("z.lib")
-            .as_path()
-            .display()
-            .to_string()
-    } else {
-        String::from("z.lib")
-    };
-    build.define("ANGLE_USE_EGL_LOADER", None);
-    build
-        .flag_if_supported("/wd4100")
-        .flag_if_supported("/wd4127")
-        .flag_if_supported("/wd9002");
 
-    for file in data.includes {
-        build.include(fixup_path(file));
-    }
-
-    let mut cmd = build.get_compiler().to_command();
+    let mut cmd = std::process::Command::new(linker());
     let out_string = env::var("OUT_DIR").unwrap();
     let out_path = Path::new(&out_string);
 
-    for lib in data.os_libs {
-        cmd.arg(&format!("{}.lib", lib));
-    }
-    // also need to link zlib
-    cmd.arg(&zlib_link_arg);
-
-    for file in data.sources {
-        cmd.arg(fixup_path(file));
-    }
     // Specify the def file for the linker.
     cmd.arg("/link");
     cmd.arg("/dll");
     cmd.arg(format!("/DEF:{def_file}"));
-    cmd.arg(format!("{name}.lib"));
+    cmd.arg(out_path.join(format!("{name}.lib")));
 
     let status = cmd.status();
     assert!(status.unwrap().success());
