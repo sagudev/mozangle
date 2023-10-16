@@ -90,15 +90,17 @@ fn build_windows_dll(data: &build_data::Data, name: &str, def_file: &str) {
     let out_string = env::var("OUT_DIR").unwrap();
     let out_path = Path::new(&out_string);
 
-    // Specify the def file for the linker.
-    cmd.arg("/link");
+    // generate dll from statik
+    cmd.arg("/MACHINE:X86");
     cmd.arg("/dll");
     cmd.arg(format!("/DEF:{def_file}"));
     cmd.arg(out_path.join(format!("{name}.lib")));
+    cmd.arg(format!("/OUT:lib{def_file}.dll"));
+
+    println!("{:?}");
 
     let status = cmd.status();
     assert!(status.unwrap().success());
-    // link /dll /machine:x86 /DEF:gfx/angle/checkout/src/libEGL/libEGL_autogen.def target\debug\build\mozangle-bc59b197c4abdb9d\out\EGL.lib /OUT:libEGL.dll
 }
 
 #[cfg(feature = "egl")]
