@@ -97,7 +97,7 @@ fn build_windows_dll(data: &build_data::Data, name: &str, def_file: &str) {
     cmd.arg(out_path.join(format!("{name}.lib")));
     cmd.arg(format!("/OUT:lib{def_file}.dll"));
 
-    println!("{:?}");
+    println!("{:?}", cmd);
 
     let status = cmd.status();
     assert!(status.unwrap().success());
