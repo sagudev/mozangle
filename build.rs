@@ -91,10 +91,11 @@ fn build_windows_dll(data: &build_data::Data, name: &str, def_file: &str) {
     let out_path = Path::new(&out_string);
 
     // generate dll from statik
-    cmd.arg("/MACHINE:X86");
+    //cmd.arg("/MACHINE:X86");
     cmd.arg("/dll");
     cmd.arg(format!("/DEF:{def_file}"));
-    cmd.arg(out_path.join(format!("{name}.lib")));
+    cmd.arg(out_path.join(format!("EGL.lib")));
+    cmd.arg(out_path.join(format!("GLESv2.lib")));
     cmd.arg(format!("/OUT:lib{name}.dll"));
 
     println!("{:?}", cmd);
