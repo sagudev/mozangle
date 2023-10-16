@@ -62,18 +62,20 @@ fn linker() -> String {
                 } else {
                     true
                 }
-            },
+            }
         }
     }
     if let Ok(linker) = env::var("LINKER") {
         linker
     } else if let Ok(linker) = env::var("RUSTC_LINKER") {
         linker
-    } else if let Some(linker) = cc::windows_registry::find(&env::var("TARGET").unwrap(), "link.exe") {
+    } else if let Some(linker) =
+        cc::windows_registry::find(&env::var("TARGET").unwrap(), "link.exe")
+    {
         linker.get_program().to_str().unwrap().to_owned()
-    } else if exec_exists("link"){
+    } else if exec_exists("link") {
         "link".to_string()
-    } else if exec_exists("lld-link"){
+    } else if exec_exists("lld-link") {
         "link".to_string()
     } else {
         panic!("Linker not found!");
@@ -124,6 +126,10 @@ fn build_win_statik(target: &str, data: &build_data::Data, name: &str) {
     // add zlib from libz-sys to include path
     if let Ok(zlib_include_dir) = env::var("DEP_Z_INCLUDE") {
         build.include(zlib_include_dir.replace("\\", "/"));
+    }
+
+    for lib in data.os_libs {
+        println!("cargo:rustc-link-lib={}", lib);
     }
 
     if target.contains("x86_64") || target.contains("i686") {
