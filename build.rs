@@ -218,16 +218,12 @@ fn build_lib(libs: &mut HashSet<Libs>, target: &String, lib: Libs) {
     // Enable multiprocessing for faster builds.
     build.flag_if_supported("/MP");
 
-    build.link_lib_modifier("-whole-archive");
+    //build.link_lib_modifier("-whole-archive");
 
     build.compile(data.lib);
 
     for lib in data.os_libs {
         println!("cargo:rustc-link-lib={}", lib);
-    }
-
-    for lib in data.use_libs {
-        println!("cargo:rustc-link-lib={}", lib.to_data().lib);
     }
 
     libs.insert(lib);
