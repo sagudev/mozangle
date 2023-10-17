@@ -35,12 +35,6 @@ fn main() {
 
     build_translator(&mut libs, &target);
 
-    #[cfg(feature = "egl")]
-    {
-        build_lib(&mut libs, &target, Libs::EGL);
-        generate_gl_bindings();
-    }
-
     #[cfg(feature = "build_dlls")]
     {
         build_windows_dll(
@@ -53,6 +47,18 @@ fn main() {
             "libEGL",
             "gfx/angle/checkout/src/libEGL/libEGL_autogen.def",
         );
+
+        let out = env::var("OUT_DIR").unwrap();
+        println!("cargo:rustc-link-search={out}");
+        println!("cargo:rustc-link-lib=libEGL.lib");
+    }
+
+    #[cfg(feature = "egl")]
+    {
+        if !cfg!(feature = "build_dlls") {
+            build_lib(&mut libs, &target, Libs::EGL);
+        }
+        generate_gl_bindings();
     }
 
     for entry in walkdir::WalkDir::new("gfx") {
@@ -167,6 +173,7 @@ fn build_lib(libs: &mut HashSet<Libs>, target: &String, lib: Libs) {
     for &(k, v) in data.defines {
         build.define(k, v);
     }
+
     if cfg!(feature = "build_dlls") {
         build.define("ANGLE_USE_EGL_LOADER", None);
     }
