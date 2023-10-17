@@ -98,7 +98,7 @@ fn build_windows_dll(data: &build_data::Data, dll_name: &str, def_file: &str) {
 
     // Always include the base angle code.
     for lib in data.use_libs {
-        cmd.arg(&format!("{}.lib", lib.to_data().lib));
+        cmd.arg(out_path.join(format!("{}.lib", lib.to_data().lib)));
     }
 
     for lib in data.os_libs {
