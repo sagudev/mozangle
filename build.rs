@@ -111,8 +111,18 @@ fn build_windows_dll(data: &build_data::Data, dll_name: &str, def_file: &str) {
     // also need to link zlib
     cmd.arg(&zlib_link_arg);
 
-    for file in data.sources {
-        cmd.arg(fixup_path(file));
+    if dll_name == "libGLESv2" {
+        for file in data.sources {
+            if !file.contains("libANGLE") {
+                cmd.arg(fixup_path(file));
+            }
+        }
+        cmd.arg(out_path.join("libGLESv2.lib"));
+
+    } else {
+        for file in data.sources {
+            cmd.arg(fixup_path(file));
+        }
     }
 
     // Enable multiprocessing for faster builds.
