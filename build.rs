@@ -7,6 +7,7 @@ extern crate walkdir;
 
 extern crate bindgen;
 
+use std::collections::HashSet;
 use std::env;
 #[cfg(feature = "egl")]
 use std::path::Path;
@@ -14,11 +15,12 @@ use std::path::PathBuf;
 
 use bindgen::Formatter;
 
+use crate::build_data::Libs;
+
 mod build_data;
 
 fn main() {
     let target = env::var("TARGET").unwrap();
-    let egl = env::var("CARGO_FEATURE_EGL").is_ok() && target.contains("windows");
 
     if cfg!(feature = "egl") && !target.contains("windows") {
         panic!("Do not know how to build EGL support for a non-Windows platform.");
@@ -28,12 +30,14 @@ fn main() {
         panic!("Do not know how to build DLLs for a non-Windows platform.");
     }
 
-    build_translator(&target);
+    // Contains compiled libs
+    let mut libs: HashSet<Libs> = HashSet::new();
+
+    build_translator(&mut libs, &target);
 
     #[cfg(feature = "egl")]
     {
-        build_win_statik(&target, &build_data::GLESv2, "GLESv2");
-        build_win_statik(&target, &build_data::EGL, "EGL");
+        build_lib(&mut libs, &target, Libs::EGL);
         generate_gl_bindings();
     }
 
@@ -41,82 +45,112 @@ fn main() {
     {
         build_windows_dll(
             &build_data::EGL,
-            "EGL",
+            "libEGL",
             "gfx/angle/checkout/src/libEGL/libEGL_autogen.def",
         );
-        build_windows_dll(
-            &build_data::GLESv2,
-            "GLESv2",
-            "gfx/angle/checkout/src/libGLESv2/libGLESv2_autogen.def",
-        );
     }
-}
 
-fn linker() -> String {
-    fn exec_exists(s: &str) -> bool {
-        match std::process::Command::new(s).spawn() {
-            Ok(_) => true,
-            Err(e) => {
-                if let std::io::ErrorKind::NotFound = e.kind() {
-                    return false;
-                } else {
-                    true
-                }
-            }
-        }
-    }
-    if let Ok(linker) = env::var("LINKER") {
-        linker
-    } else if let Ok(linker) = env::var("RUSTC_LINKER") {
-        linker
-    } else if let Some(linker) =
-        cc::windows_registry::find(&env::var("TARGET").unwrap(), "link.exe")
-    {
-        linker.get_program().to_str().unwrap().to_owned()
-    } else if exec_exists("link") {
-        "link".to_string()
-    } else if exec_exists("lld-link") {
-        "link".to_string()
-    } else {
-        panic!("Linker not found!");
+    for entry in walkdir::WalkDir::new("gfx") {
+        let entry = entry.unwrap();
+        println!(
+            "{}",
+            format!("cargo:rerun-if-changed={}", entry.path().display())
+        );
     }
 }
 
 #[cfg(feature = "build_dlls")]
-fn build_windows_dll(data: &build_data::Data, name: &str, def_file: &str) {
-    println!("build_windows_dll: {name}");
-
-    let mut cmd = std::process::Command::new(linker());
-    let out_string = env::var("OUT_DIR").unwrap();
-    let out_path = Path::new(&out_string);
-
-    // generate dll from statik
-    //cmd.arg("/MACHINE:X86");
-    cmd.arg("/dll");
-    cmd.arg(format!("/DEF:{def_file}"));
-    for lib in data.os_libs {
-        cmd.arg(&format!("{}.lib", lib));
-    }
-    cmd.arg(out_path.join(format!("EGL.lib")));
-    cmd.arg(out_path.join(format!("GLESv2.lib")));
-    cmd.arg(format!("/OUT:lib{name}.dll"));
-
-    println!("{:?}", cmd);
-
-    let status = cmd.status();
-    assert!(status.unwrap().success());
-}
-
-#[cfg(feature = "egl")]
-fn build_win_statik(target: &str, data: &build_data::Data, name: &str) {
-    println!("build_win_statik: {name}");
+fn build_windows_dll(data: &build_data::Data, dll_name: &str, def_file: &str) {
+    println!("build_windows_dll: {dll_name}");
     let mut build = cc::Build::new();
     build.cpp(true);
     build.std("c++17");
     for &(k, v) in data.defines {
         build.define(k, v);
     }
+    // add zlib from libz-sys to include path
+    let zlib_link_arg = if let Ok(zlib_include_dir) = env::var("DEP_Z_INCLUDE") {
+        build.include(zlib_include_dir.replace("\\", "/"));
+        PathBuf::from(zlib_include_dir)
+            .parent()
+            .unwrap()
+            .join("lib")
+            .join("z.lib")
+            .as_path()
+            .display()
+            .to_string()
+    } else {
+        String::from("z.lib")
+    };
+    build.define("ANGLE_USE_EGL_LOADER", None);
+    build
+        .flag_if_supported("/wd4100")
+        .flag_if_supported("/wd4127")
+        .flag_if_supported("/wd9002");
 
+    for file in data.includes {
+        build.include(fixup_path(file));
+    }
+
+    let mut cmd = build.get_compiler().to_command();
+    let out_string = env::var("OUT_DIR").unwrap();
+    let out_path = Path::new(&out_string);
+
+    // Always include the base angle code.
+    for lib in data.use_libs {
+        cmd.arg(&format!("{}.lib", lib.to_data().lib));
+    }
+
+    for lib in data.os_libs {
+        cmd.arg(&format!("{}.lib", lib));
+    }
+    // also need to link zlib
+    cmd.arg(&zlib_link_arg);
+
+    for file in data.sources {
+        cmd.arg(fixup_path(file));
+    }
+
+    // Enable multiprocessing for faster builds.
+    cmd.arg("/MP");
+    // Specify the creation of a DLL.
+    cmd.arg("/LD"); // Create a DLL.
+                    // Specify the name of the DLL.
+    cmd.arg(format!("/Fe{}", out_path.join(dll_name).display()));
+    // Temporary obj files should go into the output directory. The slash
+    // at the end is required for multiple source inputs.
+    cmd.arg(format!("/Fo{}\\", out_path.display()));
+
+    // Specify the def file for the linker.
+    cmd.arg("/link");
+    cmd.arg(format!("/DEF:{def_file}"));
+
+    let status = cmd.status();
+    assert!(status.unwrap().success());
+}
+
+fn build_lib(libs: &mut HashSet<Libs>, target: &String, lib: Libs) {
+    // Check if we already built it do not rebuild
+    if libs.contains(&lib) {
+        return;
+    }
+
+    println!("build_lib: {lib:?}");
+    let data = lib.to_data();
+    for dep_lib in data.use_libs {
+        build_lib(libs, target, *dep_lib);
+    }
+    let repo = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
+    env::set_current_dir(repo).unwrap();
+
+    // Change to one of the directory that contains moz.build
+    let mut build = cc::Build::new();
+
+    build.cpp(true).std("c++17").warnings(false);
+
+    for &(k, v) in data.defines {
+        build.define(k, v);
+    }
     if cfg!(feature = "build_dlls") {
         build.define("ANGLE_USE_EGL_LOADER", None);
     }
@@ -125,23 +159,49 @@ fn build_win_statik(target: &str, data: &build_data::Data, name: &str) {
         build.include(fixup_path(file));
     }
 
+    if matches!(lib, Libs::COMPRESSION_UTILS_PORTABLE) {
+        // add zlib from libz-sys to include path
+        if let Ok(zlib_include_dir) = env::var("DEP_Z_INCLUDE") {
+            build.include(zlib_include_dir.replace("\\", "/"));
+        }
+    }
+
     for file in data.sources {
         build.file(fixup_path(file));
     }
 
-    // add zlib from libz-sys to include path
-    if let Ok(zlib_include_dir) = env::var("DEP_Z_INCLUDE") {
-        build.include(zlib_include_dir.replace("\\", "/"));
-    }
-
-    for lib in data.os_libs {
-        println!("cargo:rustc-link-lib={}", lib);
-    }
-
-    if target.contains("x86_64") || target.contains("i686") {
-        build
-            .flag_if_supported("-msse2") // GNU
-            .flag_if_supported("-arch:SSE2"); // MSVC
+    if matches!(lib, Libs::ANGLE_COMMON) {
+        // Hard-code lines like `if CONFIG['OS_ARCH'] == 'Darwin':` in moz.build files
+        for &(os, sources) in &[
+            (
+                "darwin",
+                &[
+                    "gfx/angle/checkout/src/common/system_utils_mac.cpp",
+                    "gfx/angle/checkout/src/common/system_utils_posix.cpp",
+                ][..],
+            ),
+            (
+                "linux",
+                &[
+                    "gfx/angle/checkout/src/common/system_utils_linux.cpp",
+                    "gfx/angle/checkout/src/common/system_utils_posix.cpp",
+                ][..],
+            ),
+            (
+                "windows",
+                &[
+                    "gfx/angle/checkout/src/common/system_utils_win.cpp",
+                    "gfx/angle/checkout/src/common/system_utils_win32.cpp",
+                ][..],
+            ),
+        ] {
+            if target.contains(os) {
+                for source in sources {
+                    build.file(source);
+                }
+                break;
+            }
+        }
     }
 
     build
@@ -149,17 +209,29 @@ fn build_win_statik(target: &str, data: &build_data::Data, name: &str) {
         .flag_if_supported("/wd4127")
         .flag_if_supported("/wd9002");
 
+    if target.contains("x86_64") || target.contains("i686") {
+        build
+            .flag_if_supported("-msse2") // GNU
+            .flag_if_supported("-arch:SSE2"); // MSVC
+    }
+
     // Enable multiprocessing for faster builds.
     build.flag_if_supported("/MP");
 
     build.link_lib_modifier("-whole-archive");
 
-    // Build lib.
-    build.compile(name);
+    build.compile(data.lib);
+
+    for lib in data.os_libs {
+        println!("cargo:rustc-link-lib={}", lib);
+    }
+
+    libs.insert(lib);
 }
 
-fn build_translator(target: &String) {
+fn build_translator(libs: &mut HashSet<Libs>, target: &String) {
     println!("build_translator");
+    build_lib(libs, target, Libs::TRANSLATOR);
     let data = build_data::TRANSLATOR;
 
     let repo = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
@@ -184,42 +256,6 @@ fn build_translator(target: &String) {
     // Change to one of the directory that contains moz.build
     let mut build = cc::Build::new();
 
-    for file in data.sources {
-        build.file(fixup_path(file));
-    }
-
-    // Hard-code lines like `if CONFIG['OS_ARCH'] == 'Darwin':` in moz.build files
-    for &(os, sources) in &[
-        (
-            "darwin",
-            &[
-                "gfx/angle/checkout/src/common/system_utils_mac.cpp",
-                "gfx/angle/checkout/src/common/system_utils_posix.cpp",
-            ][..],
-        ),
-        (
-            "linux",
-            &[
-                "gfx/angle/checkout/src/common/system_utils_linux.cpp",
-                "gfx/angle/checkout/src/common/system_utils_posix.cpp",
-            ][..],
-        ),
-        (
-            "windows",
-            &[
-                "gfx/angle/checkout/src/common/system_utils_win.cpp",
-                "gfx/angle/checkout/src/common/system_utils_win32.cpp",
-            ][..],
-        ),
-    ] {
-        if target.contains(os) {
-            for source in sources {
-                build.file(source);
-            }
-            break;
-        }
-    }
-
     for flag in &clang_args {
         build.flag(flag);
     }
@@ -241,7 +277,7 @@ fn build_translator(target: &String) {
 
     build.link_lib_modifier("-whole-archive");
 
-    build.compile("translator");
+    build.compile("glslang_glue");
 
     // now generate bindings
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
@@ -271,20 +307,10 @@ fn build_translator(target: &String) {
     builder
         .generate()
         .expect("Should generate shader bindings")
-        .write_to_file(out_dir.join("angle_bindings.rs"))
+        .write_to_file(out_dir.join("glslang_glue_bindings.rs"))
         .expect("Should write bindings to file");
 
-    for lib in data.os_libs {
-        println!("cargo:rustc-link-lib={}", lib);
-    }
     println!("cargo:rerun-if-changed=src/shaders/glslang-c.cpp");
-    for entry in walkdir::WalkDir::new("gfx") {
-        let entry = entry.unwrap();
-        println!(
-            "{}",
-            format!("cargo:rerun-if-changed={}", entry.path().display())
-        );
-    }
 }
 
 const ALLOWLIST_FN: &'static [&'static str] = &[
