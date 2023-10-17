@@ -53,7 +53,7 @@ fn main() {
 
         let out = env::var("OUT_DIR").unwrap();
         println!("cargo:rustc-link-search={out}");
-        println!("cargo:rustc-link-lib=libEGL.lib");
+        println!("cargo:rustc-link-lib=libEGL");
     }
 
     #[cfg(feature = "egl")]
@@ -127,7 +127,7 @@ fn build_windows_dll(data: &build_data::Data, dll_name: &str, def_file: &str) {
         cmd.arg(out_path.join("preprocessor.lib"));
         for file in data.sources {
             //if !file.contains("libANGLE") {
-                cmd.arg(fixup_path(file));
+            cmd.arg(fixup_path(file));
             //}
         }
     } else {
