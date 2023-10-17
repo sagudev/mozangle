@@ -94,12 +94,7 @@ fn build_windows_dll(data: &build_data::Data, name: &str, def_file: &str) {
     //cmd.arg("/MACHINE:X86");
     cmd.arg("/dll");
     cmd.arg(format!("/DEF:{def_file}"));
-    let libs: std::collections::HashSet<&&str> = build_data::EGL
-        .os_libs
-        .iter()
-        .chain(build_data::GLESv2.os_libs)
-        .collect();
-    for lib in libs {
+    for lib in data.os_libs {
         cmd.arg(&format!("{}.lib", lib));
     }
     cmd.arg(out_path.join(format!("EGL.lib")));
