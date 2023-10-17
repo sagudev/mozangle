@@ -48,6 +48,11 @@ fn main() {
             "libEGL",
             "gfx/angle/checkout/src/libEGL/libEGL_autogen.def",
         );
+        build_windows_dll(
+            &build_data::GLESv2,
+            "libGLESv2",
+            "gfx/angle/checkout/src/libGLESv2/libGLESv2_autogen.def",
+        );
     }
 
     for entry in walkdir::WalkDir::new("gfx") {
@@ -96,7 +101,6 @@ fn build_windows_dll(data: &build_data::Data, dll_name: &str, def_file: &str) {
     let out_string = env::var("OUT_DIR").unwrap();
     let out_path = Path::new(&out_string);
 
-    // Always include the base angle code.
     for lib in data.use_libs {
         cmd.arg(out_path.join(format!("{}.lib", lib.to_data().lib)));
     }
