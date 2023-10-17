@@ -112,7 +112,8 @@ fn build_windows_dll(data: &build_data::Data, dll_name: &str, def_file: &str) {
     cmd.arg(&zlib_link_arg);
 
     if dll_name == "libGLESv2" {
-        cmd.arg(out_path.join("libGLESv2.lib"));
+        std::fs::rename(out_path.join("libGLESv2.lib"), out_path.join("libGLESv2_static.lib")).unwrap();
+        cmd.arg(out_path.join("libGLESv2_static.lib"));
         // transitive lib (that's the only case)
         cmd.arg(out_path.join("preprocessor.lib"));
         for file in data.sources {
