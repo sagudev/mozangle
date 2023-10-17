@@ -159,12 +159,12 @@ fn build_lib(libs: &mut HashSet<Libs>, target: &String, lib: Libs) {
         build.include(fixup_path(file));
     }
 
-    if matches!(lib, Libs::COMPRESSION_UTILS_PORTABLE) {
-        // add zlib from libz-sys to include path
-        if let Ok(zlib_include_dir) = env::var("DEP_Z_INCLUDE") {
-            build.include(zlib_include_dir.replace("\\", "/"));
-        }
+    //if matches!(lib, Libs::COMPRESSION_UTILS_PORTABLE) {
+    // add zlib from libz-sys to include path
+    if let Ok(zlib_include_dir) = env::var("DEP_Z_INCLUDE") {
+        build.include(zlib_include_dir.replace("\\", "/"));
     }
+    //}
 
     for file in data.sources {
         build.file(fixup_path(file));
