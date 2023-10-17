@@ -44,14 +44,14 @@ fn main() {
     #[cfg(feature = "build_dlls")]
     {
         build_windows_dll(
-            &build_data::EGL,
-            "libEGL",
-            "gfx/angle/checkout/src/libEGL/libEGL_autogen.def",
-        );
-        build_windows_dll(
             &build_data::GLESv2,
             "libGLESv2",
             "gfx/angle/checkout/src/libGLESv2/libGLESv2_autogen.def",
+        );
+        build_windows_dll(
+            &build_data::EGL,
+            "libEGL",
+            "gfx/angle/checkout/src/libEGL/libEGL_autogen.def",
         );
     }
 
