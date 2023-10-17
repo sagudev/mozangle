@@ -226,6 +226,10 @@ fn build_lib(libs: &mut HashSet<Libs>, target: &String, lib: Libs) {
         println!("cargo:rustc-link-lib={}", lib);
     }
 
+    for lib in data.use_libs {
+        println!("cargo:rustc-link-lib={}", lib.to_data().lib);
+    }
+
     libs.insert(lib);
 }
 
