@@ -37,6 +37,9 @@ fn main() {
 
     #[cfg(feature = "build_dlls")]
     {
+        for lib in build_data::GLESv2.use_libs {
+            build_lib(&mut libs, &target, *lib);
+        }
         build_windows_dll(
             &build_data::GLESv2,
             "libGLESv2",
