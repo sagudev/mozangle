@@ -245,6 +245,7 @@ fn build_lib(libs: &mut HashSet<Libs>, target: &String, lib: Libs) {
     build.flag_if_supported("/MP");
 
     build.link_lib_modifier("-bundle");
+    build.link_lib_modifier("+whole-archive");
 
     build.compile(data.lib);
 
@@ -302,6 +303,7 @@ fn build_translator(libs: &mut HashSet<Libs>, target: &String) {
     }
 
     build.link_lib_modifier("-bundle");
+    build.link_lib_modifier("+whole-archive");
 
     build.compile("glslang_glue");
 
