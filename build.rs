@@ -244,7 +244,7 @@ fn build_lib(libs: &mut HashSet<Libs>, target: &String, lib: Libs) {
     // Enable multiprocessing for faster builds.
     build.flag_if_supported("/MP");
 
-    build.link_lib_modifier("+whole-archive");
+    build.link_lib_modifier("-whole-archive");
 
     build.compile(data.lib);
 
@@ -301,7 +301,7 @@ fn build_translator(libs: &mut HashSet<Libs>, target: &String) {
             .flag_if_supported("-arch:SSE2"); // MSVC
     }
 
-    build.link_lib_modifier("+whole-archive");
+    build.link_lib_modifier("-whole-archive");
 
     build.compile("glslang_glue");
 
