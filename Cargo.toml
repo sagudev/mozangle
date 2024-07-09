@@ -8,11 +8,9 @@ repository = "https://github.com/servo/mozangle"
 readme = "README.md"
 
 [dependencies]
-libz-sys = { version = "1.1", optional = true }
 lazy_static = "1.0"
 
 [dev-dependencies]
-dlopen = "0.1"
 
 [build-dependencies]
 bindgen = { version = "0.69", default-features = false, features = [
@@ -20,10 +18,4 @@ bindgen = { version = "0.69", default-features = false, features = [
     "which-rustfmt",
 ] }
 cc = { version = "1.0.83", features = ["parallel"] }
-gl_generator = { version = "0.14", optional = true }
 walkdir = "2"
-
-[features]
-egl = ["gl_generator", "libz-sys"] # Only does anything on Windows
-build_dlls = ["egl", "libz-sys"]
-dynamic_lib = []

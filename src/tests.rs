@@ -12,23 +12,6 @@ fn test_linkage() {
     init();
 }
 
-#[cfg(feature = "build_dlls")]
-#[test]
-fn test_egl_dll_linkage() {
-    use dlopen::symbor::Library;
-    use egl::ffi;
-    let lib = Library::open("libEGL.dll").unwrap();
-    let GetError = unsafe { lib.symbol::<unsafe extern "C" fn() -> u32>("eglGetError") }.unwrap();
-    assert_eq!(unsafe { GetError() }, ffi::SUCCESS);
-}
-
-#[cfg(feature = "egl")]
-#[test]
-fn test_egl_linkage() {
-    use egl::ffi;
-    assert_eq!(unsafe { ffi::GetError() } as u32, ffi::SUCCESS);
-}
-
 #[test]
 fn test_translation_complex() {
     init();
