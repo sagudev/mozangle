@@ -8,12 +8,12 @@ from pathlib import Path
 
 upstream_txt = Path("UPSTREAM").read_text()
 
-tag = upstream_txt.removeprefix("gfx/angle is taken from ").split(":", 1)[0].strip()
+tag = upstream_txt.removeprefix("third_party is taken from ").split(":", 1)[0].strip()
 
 print(f"Using Firefox tag: {tag}")
 
 url = f"https://github.com/mozilla-firefox/firefox/archive/refs/tags/{tag}.tar.gz"
-prefix = f"firefox-{tag}/gfx/angle/"
+prefixes = ["third_party/chromium", "third_party/angle/"]
 
 print(f"Downloading {url}")
 
@@ -22,13 +22,12 @@ with urllib.request.urlopen(url) as response:
 
     with tarfile.open(fileobj=response, mode="r|gz") as archive:
         for member in archive:
-            if not member.name.startswith(prefix):
-                continue
-
-            member.name = member.name[len(prefix) :]
-
-            if member.name:
-                archive.extract(member, path="gfx/angle")
+            for prefix in prefixes:
+                if member.name.startswith(f"firefox-{tag}/{prefix}"):
+                    member.name = member.name[len(f"firefox-{tag}/") :]
+                    if member.name:
+                        archive.extract(member)
+                    break
 
 
 for patch in Path("patches").glob("*.patch"):
