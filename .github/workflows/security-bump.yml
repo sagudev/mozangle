@@ -16,6 +16,10 @@ jobs:
             pull-requests: write
         steps:
             - uses: actions/checkout@v6
+            - name: Configure Git
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             - run: python3 ./security-bump.py
               id: bump
             - run: python3 ./update.py
