@@ -1,4 +1,12 @@
 config("zlib_config") {
+  zlib_include_dir = string_replace(getenv("DEP_Z_INCLUDE"), "\\", "/")
+
+  if (zlib_include_dir != "") {
+    include_dirs = [ zlib_include_dir ]
+    lib_dirs = [ zlib_include_dir + "/../lib" ]
+  }
+
+  libs = [ "z" ]
 }
 source_set("zlib") {
     public_configs = [ ":zlib_config" ]
