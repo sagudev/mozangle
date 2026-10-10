@@ -4,6 +4,7 @@ extern crate cc;
 #[cfg(feature = "egl")]
 extern crate gl_generator;
 extern crate walkdir;
+extern crate gn_cc;
 
 extern crate bindgen;
 
@@ -17,6 +18,8 @@ use bindgen::Formatter;
 
 use crate::build_data::Libs;
 
+use gn_cc::GnProject;
+
 mod build_data;
 
 fn main() {
@@ -29,6 +32,37 @@ fn main() {
     if cfg!(feature = "build_dlls") && !target.contains("windows") {
         panic!("Do not know how to build DLLs for a non-Windows platform.");
     }
+
+    let mut gn_builder = GnProject::builder_for_cargo_build_rs("third_party");
+    gn_builder.set_root_path(".");
+    gn_builder.set_dotfile_path("angle/.gn");
+
+    // gn args
+    gn_builder.arg("is_debug", "false");
+    gn_builder.arg("angle_build_all", "false");
+    gn_builder.arg("angle_enable_abseil", "false");
+    gn_builder.arg("angle_build_vulkan_system_info", "false");
+    gn_builder.arg("angle_enable_d3d11", "false");
+    gn_builder.arg("angle_enable_essl", "true");
+    gn_builder.arg("angle_enable_gl", "false");
+    gn_builder.arg("angle_enable_glsl", "true");
+    gn_builder.arg("angle_enable_hlsl", "false");
+    gn_builder.arg("angle_enable_metal", "false");
+    gn_builder.arg("angle_enable_msl", "false");
+    gn_builder.arg("angle_enable_null", "false");
+    gn_builder.arg("angle_enable_vulkan", "false");
+    gn_builder.arg("angle_enable_wgpu", "false");
+    gn_builder.arg("angle_has_frame_capture", "false");
+    gn_builder.arg("angle_standalone", "false");
+    gn_builder.arg("angle_use_wayland", "false");
+    gn_builder.arg("enable_rust", "false");
+    gn_builder.arg("is_component_build", "false");
+    gn_builder.arg("use_custom_libcxx", "false");
+    gn_builder.arg("use_sysroot", "false");
+    let gn_project = gn_builder.run().unwrap();
+    gn_project.build("translator");
+
+    return;
 
     let mut compiled_libraries: HashSet<Libs> = HashSet::new();
 
